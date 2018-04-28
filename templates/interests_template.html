@@ -1,0 +1,96 @@
+<!doctype html>
+<html>
+    <head>
+        <title>Matchmaking Results</title>
+        <link rel="stylesheet" href="pure-min.css">
+        <!--<link href='https://fonts.googleapis.com/css?family=Linden+Hill' rel='stylesheet' type='text/css'>-->
+        <link rel="stylesheet" media="screen" href="https://fontlibrary.org/face/linux-libertine" type="text/css"/>
+        <style type="text/css">
+            body {
+                /*font-family: 'Linden Hill', serif;*/
+                font-family: 'LinuxLibertineORegular'; 
+                font-weight: normal; 
+                font-style: normal; 
+                font-size: 0.85em;
+            }
+            h1 {
+                font-size: 1.0em;
+            }
+            .title {
+                color: blue;
+                text-decoration: bold;
+            }
+        
+            .author {    
+                color: gray;
+            }
+            
+            table {
+                width: 100%;
+            }
+
+            .indexCol {
+                width: 10%;
+            }
+            .rankCol
+            {
+                width: 15%;
+            }
+            .nameCol {
+                width: 49%;
+            }
+            .gradeCol {
+                width: 15%;
+            }
+            .scoreCol {
+                width: 10%;
+            }
+            
+            .fordiv{
+                font-size: 1.8em;
+            }
+            .gradediv{
+                font-size: 1.6em;
+                float: right;
+                text-align: right;
+            }
+            .pickydiv{
+                font-size: 1.6em;
+                text-align: right;
+            }
+           </style>
+    </head>
+    <body>
+        {% for person in data %} 
+            <div id="student_page"  style="page-break-inside: avoid;">
+                <div>
+                    <h1>
+                    <span class="fordiv">Interests of: {{person.first_name}} {{person.last_name}}, a {{person.sex}} {% if person.is_mentor %}MENTOR{% else %}MENTEE{% endif %}</span> <br>
+                    <span class="pickydiv">Gender Picky: {{person.gender_picky}}</span>
+                    <span class="gradediv">School: {{person.school}}</span>
+                    </h1>
+                </div>
+                <hr/>
+                <table class="pure-table">
+                    <thead>
+                    <tr>
+                        <th>Interests</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for interest in person.answers %}
+                    {% if person.answers.index(interest) % 2 == 1 %}
+                    <tr class="pure-table-odd">
+                    {% else %}
+                    <tr>
+                    {% endif %}
+                        <td class="indexCol">{{person.answers.index(interest) + 1}}.</td>
+                        <td class="nameCol">{{interest}}</td>
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endfor %}
+    </body>
+</html>

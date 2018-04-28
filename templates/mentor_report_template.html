@@ -1,0 +1,201 @@
+<!doctype html>
+<html>
+    <head>
+        <title>Matchmaking Results</title>
+        <link rel="stylesheet" href="pure-min.css">
+        <!--<link href='https://fonts.googleapis.com/css?family=Linden+Hill' rel='stylesheet' type='text/css'>-->
+        <link rel="stylesheet" media="screen" href="https://fontlibrary.org/face/linux-libertine" type="text/css"/>
+        <link href='http://fonts.googleapis.com/css?family=Lato:400,700' rel='stylesheet' type='text/css'>
+        <style type="text/css">
+            body {
+                /*font-family: 'Linden Hill', serif;*/
+                /*font-family: 'LinuxLibertineORegular';*/
+                font-family: 'Lato', sans-serif;
+                font-weight: normal; 
+                font-style: normal; 
+                font-size: 0.85em;
+            }
+            h1 {
+                font-size: 1.0em;
+            }
+            .title {
+                color: blue;
+                text-decoration: bold;
+            }
+        
+            .author {    
+                color: gray;
+            }
+            
+            table {
+                width: 100%;
+            }
+            
+            .indexCol {
+                width: 5%;
+            }
+            .menteeCol {
+                width: 50%;
+            }
+            .rankCol
+            {
+                width: 15%;
+            }
+            .matchCol {
+                width:40%;
+            }
+            .mentorCol {
+                width: 50%;
+            }
+            .gradeCol {
+                width: 15%;
+            }
+            .scoreCol {
+                width: 10%;
+            }
+            
+            .leftdiv{
+                font-size: 1.6em;
+            }
+            .rightdiv{
+                font-size: 1.6em;
+                float: right;
+                text-align: right;
+            }
+            
+            .centerdiv{
+                font-size: 1.6em;
+            }
+            
+            .fordiv{
+                font-size: 1.8em;
+            }
+            
+            .schooldiv{
+                font-size: 1.6em;
+                float: right;
+                text-align: right;
+            }
+           </style>
+    </head>
+    <body>
+        <div>
+            <h1>
+                <span class="leftdiv">Mentor/Mentee Match Results</span>
+                <span class="rightdiv">{{unmatched_mentees|length}} mentees unmatched</span>
+                <br>
+                <span class="leftdiv">Generated {{date}}</span>
+                <span class="rightdiv">{{unmatched_mentors|length}} mentors unmatched</span>
+                <br>
+                <center><span class="centerdiv">Finalized Matches</span></center>
+            </h1>
+        </div>
+        <div id="student_page"  style="page-break-inside: avoid;"></div>
+            <table class="pure-table">
+                <thead>
+                <tr>
+                    <th>Mentor</th>
+                    <th>Mentee</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for pair in pairs %}
+                    {{ loop.cycle('<tr>', '<tr class="pure-table-odd">') }}
+                    <td class="menteeCol">{{pair.get_name()}} ({% if pair.sex == 1 %}male,{% else %}female,{% endif %} {{pair.school}})</td>
+                    <td class="mentorCol">{{pairs[pair].get_name()}} ({% if pairs[pair].sex == 1 %}male,{% else %}female,{% endif %} {{pairs[pair].school}})</td>
+                {% endfor %}
+                </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        {% for unmatched_mentee in unmatched_mentees %} 
+            <div id="student_page"  style="page-break-inside: avoid;">
+                <div>
+                    <h1>
+                    <span class="fordiv">Unmatched Mentee: {{unmatched_mentee.get_name()}}</span>
+                    <span class="schooldiv">School: {{unmatched_mentee.school}}</span>
+                    </h1>
+                </div>
+                <hr/>
+                <p>
+                    Recommended mentors for {{unmatched_mentee.first_name}}&nbsp;
+                </p>
+                <p>
+                    Each of these mentors already has at least one mentee.
+                    Make sure he or she is ok with doubling up before making a match!
+                </p>
+                <table class="pure-table">
+                    <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th>Name</th>
+                        <th>School</th>
+                        <th>Rating</th>
+                        <th>Existing Mentee</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for match in unmatched_mentee.valid_matches %}
+                    {% if unmatched_mentee.valid_matches.index(match) % 2 == 1 %}
+                    <tr class="pure-table-odd">
+                    {% else %}
+                    <tr>
+                    {% endif %}
+                        <td class="indexCol">{{match.rank}}.</td>
+                        <td class="nameCol">{{match.person.first_name}} {{match.person.last_name}}</td>
+                        <td class="gradeCol">{{match.person.school}}</td>
+                        <td class="scoreCol">{{'{:3.1%}'.format(match.score)}}</td>
+                        <td class="matchCol">{{pairs[match.person].get_name()}}</td>
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endfor %}
+        {% for unmatched_mentor in unmatched_mentors %} 
+            <div id="student_page"  style="page-break-inside: avoid;">
+                <div>
+                    <h1>
+                    <span class="fordiv">Unmatched Mentor: {{unmatched_mentor.get_name()}}</span>
+                    <span class="schooldiv">School: {{unmatched_mentor.school}}</span>
+                    </h1>
+                </div>
+                <hr/>
+                <p>
+                    Recommended mentees for {{unmatched_mentor.first_name}}&nbsp;
+                </p>
+                <p>
+                    Each of these mentees already has at least one mentor.
+                    Make sure his or her mentor(s) are ok with doubling up before making a match!
+                </p>
+                <table class="pure-table">
+                    <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th>Name</th>
+                        <th>School</th>
+                        <th>Rating</th>
+                        <th>Existing Mentor</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for match in unmatched_mentor.valid_matches %}
+                    {% if unmatched_mentor.valid_matches.index(match) % 2 == 1 %}
+                    <tr class="pure-table-odd">
+                    {% else %}
+                    <tr>
+                    {% endif %}
+                        <td class="indexCol">{{match.rank}}.</td>
+                        <td class="nameCol">{{match.person.first_name}} {{match.person.last_name}}</td>
+                        <td class="gradeCol">{{match.person.school}}</td>
+                        <td class="scoreCol">{{'{:3.1%}'.format(match.score)}}</td>
+                        <td class="matchCol">{{reversed_pairs[match.person].get_name()}}</td>
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endfor %}
+    </body>
+</html>
