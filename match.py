@@ -14,6 +14,8 @@ repurposing the program for use in the Cross Trainers mentor program.
 As the following code is built hackily atop another program, certain areas are likely
 to be messy or redundant.
 
+The program was updated to Python 3.5 by Ben Klemp.
+
 This code is not formally licensed in any way, but it is intended to be used by the Cross Trainers
 organization at Kettle Moraine Lutheran high school, or whatever associated program may serve
 its equivalent purpose in matching incoming freshmen with student mentors. As such,
@@ -51,7 +53,7 @@ INTEREST_REPORT = True
 INDIVIDUAL_REPORTS = False
 ODDBALL_REPORTS = True
 MASTER_REPORT = True
-PATCH_MISSING_MATCHES = True # True # ENABLE for official runs
+PATCH_MISSING_MATCHES = False # True # ENABLE for official runs
 PRIORITIZE_GENDER_PICKY = True
 PRIMARY_REPORT = True
 MENTOR_REPORT = True
@@ -89,6 +91,8 @@ class Person:
 		self.friend_matches = []
 		self.avg_rank = 0
 		self.avg_score = 0
+		#Add automatic processing of requests
+		self.request = ""
 		
 	def from_row(self, row):
 		self.id = row[0]
@@ -98,13 +102,14 @@ class Person:
 		self.school = row[4]
 		self.gender_picky = row[5]
 		self.is_mentor = row[6]
+		self.request = row[7]
 		
 	def save_student(self, db):
 		if self.id < 0:
 			student_cmd = """
 			INSERT OR REPLACE INTO students
-			(fname, lname, sex, school, gender_picky, is_mentor) VALUES
-			(:fname, :lname, :sex, :school, :gender_picky, :is_mentor);"""
+			(fname, lname, sex, school, gender_picky, is_mentor, request) VALUES
+			(:fname, :lname, :sex, :school, :gender_picky, :is_mentor, :request);"""
 		
 			
 			db.execute(student_cmd,	{ 
@@ -113,14 +118,15 @@ class Person:
 				"sex":1 if self.sex == MALE else 2,
 				"school":self.school,
 				"gender_picky":self.gender_picky,
-				"is_mentor":1 if self.is_mentor else 0
+				"is_mentor":1 if self.is_mentor else 0,
+                                "request":self.request
 			})
 			self.id = db.lastrowid
 		else:
 			student_cmd = """
 			INSERT OR REPLACE INTO students
-			(id, fname, lname, sex, school, gender_picky, is_mentor) VALUES
-			(:id, :fname, :lname, :sex, :school, :gender_picky, :is_mentor);"""
+			(id, fname, lname, sex, school, gender_picky, is_mentor, request) VALUES
+			(:id, :fname, :lname, :sex, :school, :gender_picky, :is_mentor, :request);"""
 		
 			
 			db.execute(student_cmd,	{ 
@@ -130,7 +136,8 @@ class Person:
 				"sex":1 if self.sex == MALE else 2,
 				"school":self.school,
 				"gender_picky":self.gender_picky,
-				"is_mentor":self.is_mentor
+				"is_mentor":self.is_mentor,
+                                "request":self.request
 			})
 			
 	def get_name(self):
@@ -151,6 +158,9 @@ class Person:
 				"value":answer}) # Attempt to patch non-labeled question issues
 			question_id+=1
 
+	def has_request(self):
+                return not self.request == ""
+
 class RenderData:
 	def __init__(self,target,top_matches=[],friend_matches=[],least_compatible_matches=[]):
 		self.target = target
@@ -165,7 +175,8 @@ class Match:
 		self.score = 0.0
 		self.friend_mode = False
 		self.rank = 0
-		
+
+	#Unused, replaced with lambda functions
 	def compare(matchA, matchB):
 		if matchA.score > matchB.score:
 			return -1
@@ -180,7 +191,7 @@ class Match:
 
 def opendb(in_memory):
 	db_create = ["""CREATE TABLE IF NOT EXISTS students
-	( id INTEGER PRIMARY KEY AUTOINCREMENT, fname text, lname text, sex integer, school text, gender_picky integer, is_mentor integer);""",
+	( id INTEGER PRIMARY KEY AUTOINCREMENT, fname text, lname text, sex integer, school text, gender_picky integer, is_mentor integer, request string);""",
 	#TODO: make gender_picky use int to be fancier
 
 	"""CREATE TABLE IF NOT EXISTS answers
@@ -206,6 +217,7 @@ def load():
 			row_person.last_name = row[1]
 			row_person.school = row[4]#"".join(e for e in row[4].upper() if e.isalnum())
 			row_person.is_mentor = True
+			row_person.request = row[5] #Add request
 			
 			if row[2].upper() == MALE:
 				row_person.sex = MALE
@@ -217,7 +229,7 @@ def load():
 			else:
 				row_person.gender_picky = False
 			
-			offset = 5
+			offset = 6 #Updated due to request
 			addition_list = []
 			INTEREST_PAR = len(row) - offset - 1
 			for i in range(offset,len(row)): # Puts multiple choice answers into a list
@@ -242,6 +254,7 @@ def load():
 			row_person.first_name = row[0]
 			row_person.last_name = row[1]
 			row_person.school = row[4] #"".join(e for e in row[4].upper() if e.isalnum()) # for formatting strip
+			row_person.request = row[5] #Add request
 			
 			if row[2].upper() == MALE:
 				row_person.sex = MALE
@@ -255,7 +268,7 @@ def load():
 				
 			row_person.is_mentor = False
 			
-			offset = 5
+			offset = 6 #Updated due to request
 			addition_list = []
 			INTEREST_PAR = len(row) - offset - 1
 			for i in range(offset,len(row)): # Puts multiple choice answers into a list
@@ -316,6 +329,7 @@ def random_data_generator(number_of_men = 200, number_of_women = 200, number_of_
 		people.append(woman)
 	return people
 
+#This is not called anywhere
 def clamp(value):
 	if value > 100:
 		return 100
@@ -324,6 +338,7 @@ def clamp(value):
 	else:
 		return value
 
+#This is not called anywhere
 def report(person, valid_matches, friend_matches):
     if True: #PRINT_REPORT:
     	print ("PERSON: {fname} {lname}".format(
@@ -408,6 +423,7 @@ def oddball_report(target, students):
 	out.write(html)
 	out.close()
 
+#Unused
 def rawSQL(string):
 	db.execute(string)
 	rows = db.fetchall()
@@ -735,6 +751,7 @@ if __name__ == "__main__":
 
 	students = {}
 	rows = master_query(db)
+	print(rows[0])
 	
 	"""
 	The SQL query that determines matches doesn't actually log 0% matches.
