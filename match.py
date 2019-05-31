@@ -2,6 +2,7 @@
 """
 
 Code written/adapted by Alexander Neuwirth, July 2017
+Updated/edited by Benjamin Klemp, May 2019
 
 Built off of a charity Valentine's Day matchmaking program written by a variety of
 authors, mainly Matthew Hughes, with some degree of assistance from Alexander Neuwirth,
@@ -480,7 +481,7 @@ def get_student(id):
 	return first
 
 def mentor_report(pairs, date, unmatched_mentors, unmatched_mentees):
-	reversed_pairs = {v: k for k, v in pairs.iteritems()}
+	reversed_pairs = {v: k for k, v in pairs.items()}
 	# to make mentor lookup by mentee possible
 	if not os.path.exists("output"):
 		os.mkdir("output")
@@ -529,7 +530,7 @@ def draft_pairs(students = {}):
 	if PRIORITIZE_GENDER_PICKY:
 		for key in working_dict:
 			student = working_dict[key]
-			student.valid_matches = sorted(student.valid_matches,cmp=Match.compare)
+			student.valid_matches = sorted(student.valid_matches, key=lambda s: s.score)
 			if student.gender_picky == 1:
 				for match in student.valid_matches:
 					if best_match == None:
@@ -541,7 +542,7 @@ def draft_pairs(students = {}):
 		for key in working_dict:
 			
 			student = working_dict[key]
-			student.valid_matches = sorted(student.valid_matches,cmp=Match.compare)
+			student.valid_matches = sorted(student.valid_matches, key=lambda s: s.score)
 			for match in student.valid_matches:
 				if best_match is None:
 					best_match = match
@@ -622,7 +623,7 @@ def parse_main_query_rows(rows, students={}):
 		a1_student.matches[a2_id] = match
 		if a1_student.is_mentor != a2_student.is_mentor:
 			# Check if students are the same gender or don't care: if so, valid match
-			if (a1_student.sex == a2_student.sex) or (((a1_student.gender_picky == 0) and (a1_student.gender_picky == 0))):
+			if (a1_student.sex == a2_student.sex) or (((a1_student.gender_picky == 0) and (a2_student.gender_picky == 0))):
 				a1_student.valid_matches.append(match)
 			#else: a1_student.garbage_matches.append(match)
 		else:
@@ -631,8 +632,8 @@ def parse_main_query_rows(rows, students={}):
 	for key in students:
 		student = students[key]
 		
-		student.valid_matches = sorted(student.valid_matches,cmp=Match.compare)
-		student.friend_matches = sorted(student.friend_matches,cmp=Match.compare)
+		student.valid_matches = sorted(student.valid_matches, key=lambda s: s.score)
+		student.friend_matches = sorted(student.friend_matches, key=lambda s: s.score)
 		
 		# You are my Index[0] Baby!
 		
@@ -762,10 +763,10 @@ if __name__ == "__main__":
 							exists = True
 					if not exists:
 						rows.append((a,b,0))
-			if a%10==0:print("Patch is {:.3}% complete").format(float(a)/float(student_count) * 100)
-		print "Patch complete. \n"
+			if a%10==0:print(("Patch is {:.3}% complete").format(float(a)/float(student_count) * 100))
+		print("Patch complete. \n")
 	
-	print "Calculating compatibility...\n"
+	print("Calculating compatibility...\n")
 	students, stats = parse_main_query_rows(rows, students)
 	
 	copied_students = {}
@@ -775,7 +776,7 @@ if __name__ == "__main__":
 		student = students[key]
 		copied_students.update({key:copy.copy(student)})
 	
-	print "Drafting pairs...\n"
+	print("Drafting pairs...\n")
 
 	leftovers = draft_pairs(students)
 
@@ -792,11 +793,11 @@ if __name__ == "__main__":
 			unmatched_mentees.append(leftovers[leftover])
 	
 	if leftovers is not None:
-		print "Leftovers:"
+		print("Leftovers:")
 		for student in leftovers:
-			print leftovers[student].get_name() + (" (mentor)" if leftovers[student].is_mentor == 1 else " (mentee)")
-		print "To minimize leftovers, set PATCH_MISSING_MATCHES to True.\n" if (not PATCH_MISSING_MATCHES) else "\n"
-	else: print "No leftovers. \n"
+			print(leftovers[student].get_name() + (" (mentor)" if leftovers[student].is_mentor == 1 else " (mentee)"))
+		print("To minimize leftovers, set PATCH_MISSING_MATCHES to True.\n" if (not PATCH_MISSING_MATCHES) else "\n")
+	else: print("No leftovers. \n")
 	
 	print("Statistics:")
 	print("Average Score: {avg_score}".format(avg_score=stats["avg_score"]))
@@ -828,7 +829,7 @@ if __name__ == "__main__":
 			oddball_report(person, student_list)
 	
 	if MENTOR_REPORT:	
-		print "Writing Mentor Pair Report"
+		print("Writing Mentor Pair Report")
 		date=time.strftime("%m/%d/%Y")
 		mentor_report(mentor_matches,date,unmatched_mentors,unmatched_mentees)
 		
