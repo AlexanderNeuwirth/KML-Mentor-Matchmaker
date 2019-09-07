@@ -14,7 +14,7 @@ repurposing the program for use in the Cross Trainers mentor program.
 As the following code is built hackily atop another program, certain areas are likely
 to be messy or redundant.
 
-The program was updated to Python 3.5 by Ben Klemp.
+The program was updated by Ben Klemp.
 
 This code is not formally licensed in any way, but it is intended to be used by the Cross Trainers
 organization at Kettle Moraine Lutheran high school, or whatever associated program may serve
@@ -159,7 +159,17 @@ class Person:
 			question_id+=1
 
 	def has_request(self):
-                return not self.request == ""
+		return not self.request == ""
+
+	def print_person(self):
+		print(
+			"""%s %s (%s):
+        Gender: %s
+        School: %s
+        Gender Picky: %s
+        Mentor: %s
+        Request: %s
+        """ % (self.first_name, self.last_name, self.id, (MALE if self.sex == 1 else FEMALE), self.school, self.gender_picky == 1, self.is_mentor == 1, self.request))
 
 class RenderData:
 	def __init__(self,target,top_matches=[],friend_matches=[],least_compatible_matches=[]):
@@ -191,7 +201,7 @@ class Match:
 
 def opendb(in_memory):
 	db_create = ["""CREATE TABLE IF NOT EXISTS students
-	( id INTEGER PRIMARY KEY AUTOINCREMENT, fname text, lname text, sex integer, school text, gender_picky integer, is_mentor integer, request string);""",
+	( id INTEGER PRIMARY KEY AUTOINCREMENT, fname text, lname text, sex integer, school text, gender_picky integer, is_mentor integer, request str);""",
 	#TODO: make gender_picky use int to be fancier
 
 	"""CREATE TABLE IF NOT EXISTS answers
@@ -516,6 +526,29 @@ def mentor_report(pairs, date, unmatched_mentors, unmatched_mentees):
 	
 	out.close()
 
+def get_student_by_name(name):#&...&
+        fname, lname = [0, 0]
+        try:
+                fname, lname = name.strip().split(' ')
+        except:
+                print("Couldn't unpack '" + name + "'")
+        db.execute("SELECT * FROM students WHERE fname = :fname AND lname = :lname", {"fname":fname, "lname":lname})
+        first = db.fetchone()
+        if first == None:
+                print("Error: Student not found: " + name)
+                return
+        student = Person()
+        student.from_row(first)
+        return student
+
+def request_match(s1, s2):
+        match = Match()
+        match.owner = s1
+        match.person = s2
+        match.score = 100
+        match.rank = 1
+        return match
+
 """
 The following function defines the mentor/mentee drafting process.
 It goes through the match data, picking out the top-scored valid match.
@@ -540,9 +573,15 @@ def draft_pairs(students = {}):
 		if len(student.valid_matches) == 1:
 			print "Prevented " + student.get_name() + " from having no valid matches by forcing a match with " + student.valid_matches[0].person.get_name()
 			student.valid_matches[0].score = 100000000 # Ensures this match is selected, as it is the only valid match
-			best_match = student.valid_matches[0]""" 
+			best_match = student.valid_matches[0]"""
 
-
+	requests = [] #&...& TODO: Use this in the matchmaking cycle to ensure request matches
+	for key in working_dict:
+		student = working_dict[key]
+		if not student.request == "":
+			student.valid_matches = [request_match(student, get_student_by_name(student.request))]
+			if student not in requests:
+				requests.append(student)
 	if PRIORITIZE_GENDER_PICKY:
 		for key in working_dict:
 			student = working_dict[key]
@@ -815,6 +854,8 @@ if __name__ == "__main__":
 			print(leftovers[student].get_name() + (" (mentor)" if leftovers[student].is_mentor == 1 else " (mentee)"))
 		print("To minimize leftovers, set PATCH_MISSING_MATCHES to True.\n" if (not PATCH_MISSING_MATCHES) else "\n")
 	else: print("No leftovers. \n")
+
+	#print(get_student_by_name("Ellen Amundson").print_person()) #First person with a auto-handled request
 	
 	print("Statistics:")
 	print("Average Score: {avg_score}".format(avg_score=stats["avg_score"]))
